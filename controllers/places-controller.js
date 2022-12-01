@@ -1,3 +1,4 @@
+const fs = require('fs');
 const { v4: uuidv4 } = require("uuid");
 const HttpError = require("../models/http-error");
 const mongoose = require('mongoose');
@@ -70,7 +71,7 @@ const createPlace = async (req, res, next) => {
     description,
     address,
     location: coordinates,
-    image: "https://mapio.net/images-immo-detalhe/6201917/-img-0.jpeg",
+    image: req.file.path,
     creator,
   });
 
@@ -79,7 +80,7 @@ const createPlace = async (req, res, next) => {
     user = await User.findById(creator);
   } catch (err) {
     const error = new HttpError(
-      "Criação de lugar falhou, tente novamente",
+      "Falha no servidor, tente novamente",
       500
     );
     return next(error);
@@ -170,6 +171,8 @@ const deletePlace = async (req, res, next) => {
     return next(error);
   }
 
+  const imagePath = place.image
+
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
@@ -185,6 +188,10 @@ const deletePlace = async (req, res, next) => {
     console.log(err);
     return next(error);
   }
+
+  fs.unlink(imagePath, err => {
+    console.log(err);
+  })
 
   res.status(200).json({ message: "Lugar deletado." });
 };

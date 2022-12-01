@@ -35,15 +35,14 @@ const signup = async (req, res, next) => {
   }
 
   if (existingUser) {
-    const error = HttpError("Usuário já existe. Por favor faça o login", 422);
+    const error = new HttpError("Usuário já existe. Por favor faça o login", 422);
     return next(error);
   }
 
   const createdUser = new User({
     name,
     email,
-    image:
-      "https://st2.depositphotos.com/4881727/7380/i/600/depositphotos_73807295-stock-photo-swing-hang-from-coconut-tree.jpg",
+    image: req.file.path,
     password,
     places: [],
   });
@@ -51,7 +50,7 @@ const signup = async (req, res, next) => {
   try {
     await createdUser.save();
   } catch (err) {
-    const error = new HttpError("Cadastro falhou, tente novamente", 500);
+    const error = new HttpError("Cadastro falhou no momento da criação, tente novamente", 500);
     console.log(err);
     return next(error);
   }
