@@ -62,7 +62,7 @@ const createPlace = async (req, res, next) => {
     return next(new HttpError("Inputs inválido, por favor checar", 422));
   }
 
-  const { title, description, address, creator } = req.body;
+  const { title, description, address } = req.body;
 
   let coordinates = getCoordsForAddress(address);
 
@@ -72,12 +72,12 @@ const createPlace = async (req, res, next) => {
     address,
     location: coordinates,
     image: req.file.path,
-    creator,
+    creator: req.userData.userId
   });
 
   let user;
   try {
-    user = await User.findById(creator);
+    user = await User.findById(req.userData.userId);
   } catch (err) {
     const error = new HttpError(
       "Falha no servidor, tente novamente",
@@ -109,7 +109,6 @@ const createPlace = async (req, res, next) => {
       "Criação de lugar falhou, tente novamente",
       500
     );
-    console.log(err);
     return next(error);
   }
 
@@ -133,6 +132,11 @@ const updatePlace = async (req, res, next) => {
       "Alguma coisa deu errado, não foi possível editar o lugar",
       500
     );
+    return next(error);
+  }
+
+  if (place.creator.toString() !== req.userData.userId) {
+    const error = new HttpError("Usuário não autorizado para atualizar o lugar", 401);
     return next(error);
   }
 
@@ -171,7 +175,12 @@ const deletePlace = async (req, res, next) => {
     return next(error);
   }
 
-  const imagePath = place.image
+  const imagePath = place.image;
+
+  if (place.creator.id !== req.userData.userId) {
+    const error = new HttpError("Usuário não autorizado para deletar o lugar", 401);
+    return next(error);
+  }
 
   try {
     const sess = await mongoose.startSession();
